@@ -54,23 +54,22 @@ export interface Settings {
 export type LeaveType = 'daily' | 'hourly';
 export type LeaveCategory = 'medical' | 'entitled';
 
+// Customer interface compatible with current usage
 export interface Customer {
   id: string;
   activationCode: string;
-  password: {
-    plain: string;  // پسورد به صورت plain text
-    hash: string;   // پسورد هش شده
-  };
+  password: string;  // پسورد به صورت plain text برای super admin
+  plainPassword?: string;  // سازگاری با کد قدیمی
   licenseType: 'admin' | 'trial';
   email: string;
-  purchaseInfo: {
-    customerName: string;
-    organization?: string;
-    phone?: string;
-    notes?: string;
-  };
+  name: string;  // نام مشتری
+  organization?: string;
+  phone?: string;
+  notes?: string;
   createdAt: string;
   expiresAt?: string;
   isActive: boolean;
+  isActivated: boolean;  // وضعیت فعال‌سازی
+  activatedAt?: string;  // تاریخ فعال‌سازی
   isUsed: boolean;
 }

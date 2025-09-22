@@ -25,16 +25,16 @@ function App() {
 // Removed unused destructured elements from useCustomerSync
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showCustomerLogin, setShowCustomerLogin] = useState(false);
-  const [customerData, setCustomerData] = useState<{
-    id: string;
-    email: string;
-    password: string;
-    isActive: boolean;
-    isActivated: boolean;
-    activationCode?: string;
-    activatedAt?: string;
-    expiresAt?: string;
-  } | null>(null);
+  const [customerData, setCustomerData] = useState<Customer | null>(null);
+
+
+
+
+
+
+
+
+
   const [showCustomerDashboard, setShowCustomerDashboard] = useState(false);
   
   // ذخیره ایمیل مشتری فعلی برای همگام‌سازی
