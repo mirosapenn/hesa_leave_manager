@@ -9,11 +9,19 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const { addLog } = useLogger();
 
-  // تولید پیشوند منحصر به فرد برای هر کد فعال‌سازی
+  // Get storage prefix based on activation code
   const getStoragePrefix = () => {
     if (activationStatus.activationCode) {
-      return `tenant_${activationStatus.activationCode}_`;
+      // استفاده از کد فعال‌سازی به عنوان پیشوند برای جداسازی داده‌های کاربران مختلف
+      return `${activationStatus.activationCode.toUpperCase()}_`;
     }
+    
+    // استفاده از ایمیل مشتری به عنوان پیشوند اگر در دسترس باشد
+    const customerEmail = localStorage.getItem('customer_email');
+    if (customerEmail) {
+      return `${customerEmail.replace(/[^a-zA-Z0-9]/g, '_')}_`;
+    }
+    
     return 'default_';
   };
 
@@ -33,19 +41,16 @@ export const useAuth = () => {
       localStorage.setItem(`${prefix}users`, JSON.stringify([defaultAdmin]));
     }
 
-    // Initialize super admin user
-    const superAdminUsers = localStorage.getItem('superadmin_users');
-    if (!superAdminUsers) {
-      const superAdmin: User = {
-        id: 'superadmin',
-        username: 'superadmin',
-        email: 'ehsantaj@yahoo.com',
-        password: 'superadmin2025',
-        role: 'admin',
-        created_at: new Date().toISOString()
-      };
-      localStorage.setItem('superadmin_users', JSON.stringify([superAdmin]));
-    }
+    // Initialize super admin user - همیشه با همان مشخصات
+    const superAdmin: User = {
+      id: 'superadmin',
+      username: 'superadmin',
+      email: 'ehsantaj@yahoo.com',
+      password: 'superadmin2025',
+      role: 'admin',
+      created_at: new Date().toISOString()
+    };
+    localStorage.setItem('superadmin_users', JSON.stringify([superAdmin]));
 
     const savedUserId = localStorage.getItem(`${prefix}currentUserId`);
     if (savedUserId) {
@@ -67,7 +72,7 @@ export const useAuth = () => {
     }
     
     setLoading(false);
-  }, [activationStatus.activationCode]);
+  }, [activationStatus.activationCode, getStoragePrefix]);
 
   const login = (username: string, password: string): boolean => {
     // Check super admin first
@@ -102,10 +107,16 @@ export const useAuth = () => {
       addLog(currentUser.id, currentUser.username, 'logout', 'user', currentUser.id, { username: currentUser.username });
     }
     
-    // Remove both regular and super admin sessions
-    const prefix = getStoragePrefix();
-    localStorage.removeItem(`${prefix}currentUserId`);
-    localStorage.removeItem('superadmin_currentUserId');
+    // فقط نشست کاربر فعلی را حذف کن
+    if (currentUser?.email === 'ehsantaj@yahoo.com') {
+      // اگر سوپر ادمین است، فقط نشست سوپر ادمین را حذف کن
+      localStorage.removeItem('superadmin_currentUserId');
+    } else {
+      // اگر کاربر عادی است، فقط نشست کاربر عادی را حذف کن
+      const prefix = getStoragePrefix();
+      localStorage.removeItem(`${prefix}currentUserId`);
+    }
+    
     setCurrentUser(null);
   };
 

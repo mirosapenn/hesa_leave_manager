@@ -8,11 +8,15 @@ interface ActivationStatus {
   expiresAt?: string;
 }
 
-// کدهای فعال‌سازی از پیش تعریف شده (بعداً با API جایگزین می‌شود)
-const VALID_ACTIVATION_CODES = [
-  'HESA-ADMIN-2025-001',
-  'HESA-TRIAL-2025-002'
-];
+// کدهای فعال‌سازی از localStorage خوانده می‌شوند و توسط سوپر ادمین مدیریت می‌شوند
+const getValidActivationCodes = (): string[] => {
+  const savedCodes = localStorage.getItem('admin_activation_codes');
+  if (savedCodes) {
+    return JSON.parse(savedCodes);
+  }
+  // در صورت نبود کدها، آرایه خالی برگردانده می‌شود
+  return [];
+};
 
 // تولید شناسه منحصر به فرد برای دستگاه
 const generateDeviceFingerprint = (): string => {
@@ -59,8 +63,12 @@ export const useActivation = () => {
           const now = new Date();
           const expiryDate = new Date(activation.expiresAt);
           if (now > expiryDate) {
-            // کد منقضی شده
-            deactivate();
+            // کد منقضی شده - فقط وضعیت را به‌روز کن اما deactivate نکن
+            // این به مشتری اجازه می‌دهد به پنل مشتری برود و کد جدید وارد کند
+            setActivationStatus({
+              ...activation,
+              isActivated: false // فقط وضعیت فعال‌سازی را غیرفعال می‌کنیم
+            });
             setLoading(false);
             return;
           }
@@ -77,11 +85,13 @@ export const useActivation = () => {
   const validateActivationCode = (code: string): boolean => {
     // حذف فاصله‌ها و تبدیل به حروف بزرگ
     const cleanCode = code.trim().toUpperCase();
-    return VALID_ACTIVATION_CODES.includes(cleanCode);
+    const validCodes = getValidActivationCodes();
+    return validCodes.includes(cleanCode);
   };
 
   const activate = async (code: string): Promise<{ success: boolean; message: string }> => {
     const cleanCode = code.trim().toUpperCase();
+    setLoading(true);
     
     try {
       // تولید شناسه دستگاه
@@ -99,6 +109,8 @@ export const useActivation = () => {
 
       if (error) {
         console.error('Supabase function error:', error);
+        // نمایش خطای مناسب به کاربر
+        alert(`خطا در اتصال به سرور: ${error.message || 'لطفاً اتصال اینترنت خود را بررسی کنید'}`);
         // fallback به روش محلی
         return activateLocally(cleanCode);
       }
@@ -113,12 +125,21 @@ export const useActivation = () => {
 
         localStorage.setItem('activation_status', JSON.stringify(activationData));
         setActivationStatus(activationData);
-
+        
+        // ذخیره اطلاعات مشتری اگر موجود باشد
+        if (data.customerEmail) {
+          localStorage.setItem('customer_email', data.customerEmail);
+        }
+        
+        setLoading(false);
         return {
           success: true,
           message: data.message || 'نرم‌افزار با موفقیت فعال شد'
         };
       } else {
+        // نمایش پیام خطای مناسب
+        alert(data.message || 'کد فعال‌سازی نامعتبر است');
+        setLoading(false);
         return {
           success: false,
           message: data.message || 'خطا در فعال‌سازی'
@@ -126,7 +147,10 @@ export const useActivation = () => {
       }
     } catch (error) {
       console.error('Activation error:', error);
+      // نمایش خطای مناسب به کاربر
+      alert('خطا در فرآیند فعال‌سازی. لطفاً دوباره تلاش کنید');
       // fallback به روش محلی
+      setLoading(false);
       return activateLocally(cleanCode);
     }
   };

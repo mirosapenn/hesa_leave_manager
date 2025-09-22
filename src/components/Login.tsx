@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, User, Shield } from 'lucide-react';
+import { Lock, User, Shield, Loader2, LogIn } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (username: string, password: string) => boolean;
@@ -10,15 +10,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     const success = onLogin(username, password);
     if (!success) {
       setError('نام کاربری یا رمز عبور اشتباه است');
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -91,9 +95,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome }) => {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-colors font-medium"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-colors flex items-center justify-center gap-2 font-medium"
+              disabled={isLoading}
             >
-              ورود
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+              ورود به حساب کاربری
             </button>
           </form>
         </div>

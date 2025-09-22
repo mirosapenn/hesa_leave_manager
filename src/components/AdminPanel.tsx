@@ -5,27 +5,28 @@ import {
   Plus, 
   Download, 
   Search, 
-  Filter,
-  Calendar,
-  BarChart3,
+  // Filter,
+  // Calendar,
+  // BarChart3,
   Settings,
   LogOut,
   Shield,
-  Mail,
+  // Mail,
   Copy,
   CheckCircle,
   AlertTriangle,
   Trash2,
-  Edit2,
+  // Edit2,
   Eye,
   Clock,
   FileText,
   Activity,
-  EyeOff,
+  // EyeOff,
   UserCheck,
   UserX,
   RefreshCw,
-  Zap
+  Zap,
+  Info
 } from 'lucide-react';
 import { englishToPersianNumbers, formatPersianDate, formatPersianDateTime } from '../utils/dateHelpers';
 import ExcelJS from 'exceljs';
@@ -37,7 +38,7 @@ interface Customer {
   licenseType: 'admin' | 'trial';
   email?: string;
   plainPassword?: string;
-  purchaseInfo?: any;
+  purchaseInfo?: Record<string, unknown>;
   createdAt: string;
   expiresAt?: string;
   isActive: boolean;
@@ -64,7 +65,7 @@ interface CustomerLog {
   action: string;
   details: string;
   timestamp: string;
-  systemInfo?: any;
+  systemInfo?: Record<string, unknown>;
 }
 
 interface AdminPanelProps {
@@ -84,10 +85,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedCustomerForSettings, setSelectedCustomerForSettings] = useState<Customer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordCustomer, setPasswordCustomer] = useState<any>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  // متغیرهای زیر برای قابلیت‌های آینده نگه داشته شده‌اند
+  // const [showPasswordModal, setShowPasswordModal] = useState(false);
+  // const [passwordCustomer, setPasswordCustomer] = useState<Customer | null>(null);
+  // const [newPassword, setNewPassword] = useState('');
+  // const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   
@@ -108,7 +110,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     phone: '',
     notes: '',
     isActive: true,
-    newActivationCode: ''
+    newActivationCode: '',
+    newSitePassword: ''
   });
 
   useEffect(() => {
@@ -248,13 +251,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       phone: customer.purchaseInfo?.phone || '',
       notes: customer.purchaseInfo?.notes || '',
       isActive: customer.isActive,
-      newActivationCode: ''
+      newActivationCode: '',
+      newSitePassword: ''
     });
     setShowSettingsModal(true);
   };
 
   const updateCustomerSettings = () => {
     if (!selectedCustomerForSettings) return;
+
+    // اعتبارسنجی رمز عبور سایت
+    if (customerSettings.newSitePassword && customerSettings.newSitePassword.length < 6) {
+      showMessage('رمز عبور سایت باید حداقل 6 کاراکتر باشد', 'error');
+      return;
+    }
 
     const updatedCustomer: Customer = {
       ...selectedCustomerForSettings,
@@ -274,6 +284,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     if (customerSettings.newActivationCode.trim()) {
       updatedCustomer.activationCode = customerSettings.newActivationCode.trim().toUpperCase();
       addAdminLog('UPDATE', 'ACTIVATION_CODE', `کد فعال‌سازی مشتری ${customerSettings.customerName} تغییر کرد: ${updatedCustomer.activationCode}`);
+    }
+    
+    // ذخیره رمز عبور سایت اگر وارد شده باشد
+    if (customerSettings.newSitePassword) {
+      // ذخیره رمز عبور در localStorage با کلید مخصوص به کاربر
+      localStorage.setItem(`site_password_${updatedCustomer.id}`, customerSettings.newSitePassword);
+      addAdminLog('UPDATE', 'SITE_PASSWORD', `رمز عبور سایت مشتری ${customerSettings.customerName} تغییر کرد`);
+      showMessage('رمز عبور حساب کاربری سایت با موفقیت تغییر کرد', 'success');
     }
 
     // اگر نوع مجوز تغییر کرده باشد
@@ -1261,6 +1279,48 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                   </div>
                 </div>
               </div>
+              
+              {/* مدیریت رمز عبور حساب کاربری سایت */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-md font-medium text-gray-900 mb-4">تنظیمات حساب کاربری سایت</h4>
+                
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+                    <Info className="w-5 h-5 text-blue-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-blue-800 font-medium">توجه</p>
+                      <p className="text-xs text-blue-700">
+                        تغییر رمز عبور در این بخش، رمز عبور حساب کاربری مشتری در سایت را تغییر می‌دهد. این رمز با رمز عبور سیستم محلی متفاوت است.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      رمز عبور جدید حساب کاربری سایت
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={customerSettings.newSitePassword || ''}
+                        onChange={(e) => setCustomerSettings({ ...customerSettings, newSitePassword: e.target.value })}
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="رمز عبور جدید را وارد کنید یا تولید کنید"
+                      />
+                      <button
+                        onClick={() => setCustomerSettings({ ...customerSettings, newSitePassword: generateRandomPassword() })}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                      >
+                        <Zap className="w-4 h-4" />
+                        تولید
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      رمز عبور باید حداقل 6 کاراکتر باشد
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
@@ -1341,7 +1401,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                           <Copy className="w-3 h-3" />
                         </button>
                         <button
-                          onClick={() => handleManageCustomerPassword(customer)}
+                          onClick={() => openCustomerSettings(selectedCustomer)}
                           className="text-green-600 hover:text-green-900 p-1"
                           title="مدیریت رمز عبور"
                         >

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   User, 
-  Calendar, 
+  // Calendar, 
   Shield, 
   Key, 
   Clock, 
@@ -11,14 +11,16 @@ import {
   Eye,
   EyeOff,
   Mail,
-  CreditCard,
+  // CreditCard,
   Settings,
   LogOut
 } from 'lucide-react';
-import { englishToPersianNumbers, formatPersianDate, formatPersianDateTime } from '../utils/dateHelpers';
+import { englishToPersianNumbers, formatPersianDate } from '../utils/dateHelpers';
+
+import { Customer } from '../types';
 
 interface CustomerDashboardProps {
-  customer: any;
+  customer: Customer;
   onActivate: (code: string) => Promise<{ success: boolean; message: string }>;
   onChangePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   onLogout: () => void;
@@ -218,7 +220,7 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 }}
                 className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
               >
-                ورود به سیستم
+                ورود به حساب کاربری
               </button>
             )}
           </div>
@@ -443,7 +445,7 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             {activeTab === 'settings' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">تغییر رمز عبور</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">تغییر رمز عبور سیستم محلی</h3>
                   
                   <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
                     <div>
@@ -490,6 +492,16 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                           {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Info className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium text-blue-800">توجه</span>
+                      </div>
+                      <p className="text-blue-700 text-sm">
+                        این رمز عبور برای ورود به سیستم محلی نرم‌افزار استفاده می‌شود و با رمز عبور حساب کاربری شما در سایت متفاوت است.
+                      </p>
                     </div>
                     
                     <div>

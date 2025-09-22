@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useActivation } from './hooks/useActivation';
 import { addCustomerLog } from './hooks/useLogger';
+// import { useCustomerSync } from './hooks/useCustomerSync';
+import { Customer } from './types';
 import LandingPage from './components/LandingPage';
 import CustomerLogin from './components/CustomerLogin';
 import CustomerDashboard from './components/CustomerDashboard';
@@ -20,10 +22,29 @@ import AdminPanel from './components/AdminPanel';
 function App() {
   const { currentUser, loading, login, logout } = useAuth();
   const { activationStatus, loading: activationLoading } = useActivation();
+// Removed unused destructured elements from useCustomerSync
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showCustomerLogin, setShowCustomerLogin] = useState(false);
-  const [customerData, setCustomerData] = useState<any>(null);
+  const [customerData, setCustomerData] = useState<{
+    id: string;
+    email: string;
+    password: string;
+    isActive: boolean;
+    isActivated: boolean;
+    activationCode?: string;
+    activatedAt?: string;
+    expiresAt?: string;
+  } | null>(null);
   const [showCustomerDashboard, setShowCustomerDashboard] = useState(false);
+  
+  // ذخیره ایمیل مشتری فعلی برای همگام‌سازی
+  useEffect(() => {
+    if (customerData?.email) {
+      localStorage.setItem('current_customer_email', customerData.email);
+    } else {
+      localStorage.removeItem('current_customer_email');
+    }
+  }, [customerData]);
 
   if (loading || activationLoading) {
     return (
@@ -33,9 +54,8 @@ function App() {
     );
   }
 
-  // بررسی دسترسی مدیر کل (Super Admin)
-  const isSuperAdmin = currentUser?.email === 'ehsantaj@yahoo.com' || 
-                      activationStatus.activationCode === 'SUPER-ADMIN-2025';
+  // بررسی دسترسی مدیر کل (Super Admin) - فقط با ایمیل
+  const isSuperAdmin = currentUser?.email === 'ehsantaj@yahoo.com';
 
   // اگر مدیر کل است، پنل مدیریت نمایش داده شود
   if (isSuperAdmin && currentUser) {
@@ -47,7 +67,7 @@ function App() {
     const handleCustomerActivate = async (code: string): Promise<{ success: boolean; message: string }> => {
       // بررسی اینکه کد مربوط به همین ایمیل باشد
       const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      const customer = customers.find((c: any) => c.email === customerData.email);
+      const customer = customers.find((c: Customer) => c.email === customerData.email);
       
       if (!customer) {
         return { success: false, message: 'خطا در یافتن اطلاعات مشتری' };
@@ -75,11 +95,11 @@ function App() {
       
       if (result.success) {
         // بروزرسانی اطلاعات مشتری
-        const updatedCustomers = customers.map((c: any) => 
-          c.id === customer.id 
-            ? { ...c, isActivated: true, activatedAt: new Date().toISOString() }
-            : c
-        );
+        const updatedCustomers = customers.map((c: Customer) => 
+        c.id === customer.id 
+          ? { ...c, isActivated: true, activatedAt: new Date().toISOString() }
+          : c
+      );
         localStorage.setItem('admin_customers', JSON.stringify(updatedCustomers));
         
         setCustomerData({ ...customer, isActivated: true, activatedAt: new Date().toISOString() });
@@ -100,13 +120,13 @@ function App() {
 
     const handleCustomerPasswordChange = async (oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
       const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      const customer = customers.find((c: any) => c.email === customerData.email);
+      const customer = customers.find((c: Customer) => c.id === customerData.id);
       
       if (!customer || customer.password !== oldPassword) {
         return { success: false, message: 'رمز عبور فعلی اشتباه است' };
       }
       
-      const updatedCustomers = customers.map((c: any) => 
+      const updatedCustomers = customers.map((c: Customer) => 
         c.id === customer.id 
           ? { ...c, password: newPassword }
           : c
@@ -143,10 +163,19 @@ function App() {
       
       // بررسی مشتریان
       const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      const customer = customers.find((c: any) => 
-        c.email.toLowerCase() === email.toLowerCase() && 
-        (c.password === password || password === 'ONE_TIME_LOGIN')
+      
+      // ابتدا مشتری را با ایمیل پیدا کنیم
+      const customerByEmail = customers.find((c: Customer) => 
+        c.email.toLowerCase() === email.toLowerCase()
       );
+      
+      // اگر مشتری پیدا شد، رمز عبور را بررسی کنیم
+      // بررسی هم با فیلد password و هم با فیلد plainPassword
+      const customer = customerByEmail && 
+        (customerByEmail.password === password || 
+         customerByEmail.plainPassword === password || 
+         password === 'ONE_TIME_LOGIN') 
+        ? customerByEmail : null;
       
       if (!customer) {
         return { success: false, message: 'ایمیل یا رمز عبور اشتباه است' };

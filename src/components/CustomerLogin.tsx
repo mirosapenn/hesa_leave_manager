@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Lock, User, Shield, Mail, Eye, EyeOff, Key, Clock, AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { englishToPersianNumbers, formatPersianDateTime } from '../utils/dateHelpers';
-import { supabase } from '../lib/supabase';
-import { addCustomerLog } from '../hooks/useLogger';
+import { englishToPersianNumbers } from '../utils/dateHelpers';
+// import { formatPersianDateTime } from '../utils/dateHelpers';
+// import { supabase } from '../lib/supabase';
+// import { addCustomerLog } from '../hooks/useLogger';
 
 interface CustomerLoginProps {
   onLogin: (email: string, password: string) => { success: boolean; customer?: any; message?: string };
@@ -34,7 +35,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
       } else {
         setError(result.message || 'خطا در ورود');
       }
-    } catch (error) {
+    } catch {
       setError('خطا در ارتباط با سرور');
     }
     
@@ -81,7 +82,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
       } else {
         setError('کد یکبار مصرف اشتباه است');
       }
-    } catch (error) {
+    } catch {
       setError('خطا در بررسی کد');
     }
     
@@ -111,7 +112,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
       } else {
         setError(result.message);
       }
-    } catch (error) {
+    } catch {
       setError('خطا در ارسال کد');
     }
     setLoading(false);
@@ -235,7 +236,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
                 ) : (
                   <>
                     <User className="w-5 h-5" />
-                    ورود به سیستم
+                    ورود به حساب کاربری
                   </>
                 )}
               </button>

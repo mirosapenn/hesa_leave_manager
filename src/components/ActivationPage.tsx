@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Key, CheckCircle, AlertTriangle, Info, Calendar, Clock, Mail, LogIn, ShoppingCart, Lock } from 'lucide-react';
+import { Shield, Key, CheckCircle, AlertTriangle, Info, Mail, LogIn, ShoppingCart, Lock } from 'lucide-react';
 import { useActivation } from '../hooks/useActivation';
 import { useAuth } from '../hooks/useAuth';
 import { englishToPersianNumbers, formatPersianDate } from '../utils/dateHelpers';
@@ -48,7 +48,7 @@ const ActivationPage: React.FC = () => {
       }
       
       setLoading(false);
-    } catch (error) {
+    } catch {
       setMessage('خطا در ارتباط با سرور');
       setMessageType('error');
       setLoading(false);
@@ -71,7 +71,7 @@ const ActivationPage: React.FC = () => {
       setRequestMessage('درخواست شما ارسال شد. پس از بررسی، کد فعال‌سازی به ایمیل شما ارسال خواهد شد.');
       setRequestEmail('');
       setShowRequestForm(false);
-    } catch (error) {
+    } catch {
       setRequestMessage('خطا در ارسال درخواست');
     }
     
@@ -135,7 +135,7 @@ const ActivationPage: React.FC = () => {
         
         // لیست مشتریان موجود (در حالت واقعی از API دریافت می‌شود)
         const existingCustomers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-        const customer = existingCustomers.find((c: any) => c.email.toLowerCase() === email.toLowerCase());
+        const customer = existingCustomers.find((c: { email: string }) => c.email.toLowerCase() === email.toLowerCase());
         
         if (customer && customer.isActive) {
           // مشتری موجود و فعال است
@@ -152,7 +152,7 @@ const ActivationPage: React.FC = () => {
           setShowPurchaseOption(true);
           setShowUserLogin(false);
         }
-      } catch (error) {
+      } catch {
         setMessage('خطا در بررسی اطلاعات کاربر');
         setMessageType('error');
       }
@@ -171,7 +171,7 @@ const ActivationPage: React.FC = () => {
 
       // بررسی رمز عبور (در حالت واقعی از API بررسی می‌شود)
       const existingCustomers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      const customer = existingCustomers.find((c: any) => c.email.toLowerCase() === userEmail.toLowerCase());
+      const customer = existingCustomers.find((c: { email: string }) => c.email.toLowerCase() === userEmail.toLowerCase());
       
       if (customer && customer.password === userPassword) {
         // ورود موفق - ایجاد session برای این مشتری
@@ -320,7 +320,7 @@ const ActivationPage: React.FC = () => {
                     className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-colors font-medium flex items-center justify-center gap-2"
                   >
                     <LogIn className="w-5 h-5" />
-                    ورود به سیستم
+                ورود به حساب کاربری
                   </button>
                   <button
                     type="button"

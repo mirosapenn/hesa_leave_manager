@@ -10,7 +10,7 @@ import {
   Mail,
   Phone,
   Globe,
-  Download,
+  // Download,
   Play,
   Award,
   Clock,
@@ -139,7 +139,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem }) => {
                 onClick={onEnterSystem}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
-                ورود به سیستم
+                ورود به حساب کاربری
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
