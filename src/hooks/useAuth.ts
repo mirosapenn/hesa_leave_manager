@@ -54,7 +54,14 @@ export const useAuth = () => {
 
     const savedUserId = localStorage.getItem(`${prefix}currentUserId`);
     if (savedUserId) {
-      const users: User[] = JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      const users: User[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن users:', error);
+        return [];
+      }
+    })();
       const user = users.find(u => u.id === savedUserId);
       if (user) {
         setCurrentUser(user);
@@ -63,7 +70,14 @@ export const useAuth = () => {
       // Check for super admin session
       const superAdminUserId = localStorage.getItem('superadmin_currentUserId');
       if (superAdminUserId) {
-        const superAdminUsers: User[] = JSON.parse(localStorage.getItem('superadmin_users') || '[]');
+        const superAdminUsers: User[] = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('superadmin_users') || '[]');
+          } catch (error) {
+            console.error('خطا در خواندن superadmin_users:', error);
+            return [];
+          }
+        })();
         const superUser = superAdminUsers.find(u => u.id === superAdminUserId);
         if (superUser) {
           setCurrentUser(superUser);
@@ -77,7 +91,14 @@ export const useAuth = () => {
   const login = (username: string, password: string): boolean => {
     // Check super admin first
     if (username === 'superadmin' && password === 'superadmin2025') {
-      const superAdminUsers: User[] = JSON.parse(localStorage.getItem('superadmin_users') || '[]');
+      const superAdminUsers: User[] = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('superadmin_users') || '[]');
+        } catch (error) {
+          console.error('خطا در خواندن superadmin_users برای لاگین:', error);
+          return [];
+        }
+      })();
       const superUser = superAdminUsers.find(u => u.username === username && u.password === password);
       
       if (superUser) {
@@ -90,7 +111,14 @@ export const useAuth = () => {
 
     // Regular user login
     const prefix = getStoragePrefix();
-    const users: User[] = JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+    const users: User[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن users:', error);
+        return [];
+      }
+    })();
     const user = users.find(u => u.username === username && u.password === password);
     
     if (user) {
@@ -123,7 +151,14 @@ export const useAuth = () => {
   const changePassword = (newPassword: string) => {
     const prefix = getStoragePrefix();
     if (currentUser) {
-      const users: User[] = JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      const users: User[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن users:', error);
+        return [];
+      }
+    })();
       const updatedUsers = users.map(u => 
         u.id === currentUser.id ? { ...u, password: newPassword } : u
       );
@@ -137,7 +172,14 @@ export const useAuth = () => {
     const prefix = getStoragePrefix();
     if (currentUser?.role !== 'admin') return false;
     
-    const users: User[] = JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+    const users: User[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن users:', error);
+        return [];
+      }
+    })();
     const existingUser = users.find(u => u.username === username);
     if (existingUser) return false;
 
@@ -163,7 +205,14 @@ export const useAuth = () => {
       return false;
     }
 
-    const users: User[] = JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+    const users: User[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن users:', error);
+        return [];
+      }
+    })();
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex === -1) return false;
 
@@ -183,7 +232,14 @@ export const useAuth = () => {
       return false;
     }
 
-    const users: User[] = JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+    const users: User[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن users:', error);
+        return [];
+      }
+    })();
     const user = users.find(u => u.id === userId);
     if (!user) return false;
 

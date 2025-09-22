@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Employee, Leave, Settings } from '../types';
 import { useLogger } from './useLogger';
 import { useActivation } from './useActivation';
-import { addCustomerLog } from './useLogger';
+
 
 export const useLocalStorage = () => {
   const { activationStatus } = useActivation();

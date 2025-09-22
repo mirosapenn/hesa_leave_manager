@@ -56,7 +56,14 @@ export const useActivation = () => {
     try {
       const savedActivation = localStorage.getItem('activation_status');
       if (savedActivation) {
-        const activation: ActivationStatus = JSON.parse(savedActivation);
+        const activation: ActivationStatus = (() => {
+          try {
+            return JSON.parse(savedActivation);
+          } catch (error) {
+            console.error('خطا در خواندن activation status:', error);
+            return { isActivated: false };
+          }
+        })();
         
         // بررسی انقضا (اگر تاریخ انقضا تنظیم شده باشد)
         if (activation.expiresAt) {
