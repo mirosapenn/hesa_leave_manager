@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '../hooks/useToast';
 import { 
   Calendar, 
   Users, 
@@ -20,9 +21,11 @@ import { englishToPersianNumbers } from '../utils/dateHelpers';
 
 interface LandingPageProps {
   onEnterSystem: () => void;
+  onNavigateToCustomerLogin: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavigateToCustomerLogin }) => {
+  const { success: showSuccess } = useToast();
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactForm, setContactForm] = useState({
     name: '',
@@ -111,7 +114,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem }) => {
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // شبیه‌سازی ارسال فرم
-    alert('پیام شما با موفقیت ارسال شد. به زودی با شما تماس خواهیم گرفت.');
+    showSuccess('پیام شما با موفقیت ارسال شد. به زودی با شما تماس خواهیم گرفت.');
     setContactForm({ name: '', email: '', phone: '', message: '' });
     setShowContactForm(false);
   };
@@ -312,11 +315,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem }) => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={onEnterSystem}
+              onClick={onNavigateToCustomerLogin}
               className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium flex items-center justify-center gap-2"
             >
               <Award className="w-5 h-5" />
-              ورود به سیستم
+              ورود به حساب کاربری
             </button>
             <button
               onClick={() => setShowContactForm(true)}

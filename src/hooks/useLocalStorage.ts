@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Employee, Leave, Settings } from '../types';
 import { useLogger } from './useLogger';
 import { useActivation } from './useActivation';
+import { useSubdomainStorage } from './useSubdomainStorage';
 
 
 export const useLocalStorage = () => {
   const { activationStatus } = useActivation();
+  const { getJSON, setJSON, isSubdomainMode } = useSubdomainStorage();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [settings, setSettings] = useState<Settings>({
@@ -17,47 +19,75 @@ export const useLocalStorage = () => {
 
   const { addLog } = useLogger();
 
-  // تولید پیشوند منحصر به فرد برای هر کد فعال‌سازی
+  // تولید پیشوند منحصر به فرد برای هر کد فعال‌سازی یا ساب‌دامین
   const getStoragePrefix = () => {
+    if (isSubdomainMode) {
+      // در حالت ساب‌دامین، از useSubdomainStorage استفاده می‌کنیم
+      return '';
+    }
     if (activationStatus.activationCode) {
       return `tenant_${activationStatus.activationCode}_`;
     }
     return 'default_';
   };
   useEffect(() => {
-    const prefix = getStoragePrefix();
-    // Load data from localStorage on mount
-    const savedEmployees = localStorage.getItem(`${prefix}employees`);
-    const savedLeaves = localStorage.getItem(`${prefix}leaves`);
-    const savedSettings = localStorage.getItem(`${prefix}settings`);
+    if (isSubdomainMode) {
+      // در حالت ساب‌دامین، از useSubdomainStorage استفاده می‌کنیم
+      setEmployees(getJSON<Employee[]>('employees', []));
+      setLeaves(getJSON<Leave[]>('leaves', []));
+      setSettings(getJSON<Settings>('settings', {
+        id: '1',
+        annual_leave_limit: 30,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+    } else {
+      // در حالت عادی، از localStorage مستقیم استفاده می‌کنیم
+      const prefix = getStoragePrefix();
+      const savedEmployees = localStorage.getItem(`${prefix}employees`);
+      const savedLeaves = localStorage.getItem(`${prefix}leaves`);
+      const savedSettings = localStorage.getItem(`${prefix}settings`);
 
-    if (savedEmployees) {
-      setEmployees(JSON.parse(savedEmployees));
+      if (savedEmployees) {
+        setEmployees(JSON.parse(savedEmployees));
+      }
+      if (savedLeaves) {
+        setLeaves(JSON.parse(savedLeaves));
+      }
+      if (savedSettings) {
+        setSettings(JSON.parse(savedSettings));
+      }
     }
-    if (savedLeaves) {
-      setLeaves(JSON.parse(savedLeaves));
-    }
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
-  }, [activationStatus.activationCode]);
+  }, [activationStatus.activationCode, isSubdomainMode, getJSON]);
 
   const saveEmployees = (newEmployees: Employee[]) => {
-    const prefix = getStoragePrefix();
     setEmployees(newEmployees);
-    localStorage.setItem(`${prefix}employees`, JSON.stringify(newEmployees));
+    if (isSubdomainMode) {
+      setJSON('employees', newEmployees);
+    } else {
+      const prefix = getStoragePrefix();
+      localStorage.setItem(`${prefix}employees`, JSON.stringify(newEmployees));
+    }
   };
 
   const saveLeaves = (newLeaves: Leave[]) => {
-    const prefix = getStoragePrefix();
     setLeaves(newLeaves);
-    localStorage.setItem(`${prefix}leaves`, JSON.stringify(newLeaves));
+    if (isSubdomainMode) {
+      setJSON('leaves', newLeaves);
+    } else {
+      const prefix = getStoragePrefix();
+      localStorage.setItem(`${prefix}leaves`, JSON.stringify(newLeaves));
+    }
   };
 
   const saveSettings = (newSettings: Settings) => {
-    const prefix = getStoragePrefix();
     setSettings(newSettings);
-    localStorage.setItem(`${prefix}settings`, JSON.stringify(newSettings));
+    if (isSubdomainMode) {
+      setJSON('settings', newSettings);
+    } else {
+      const prefix = getStoragePrefix();
+      localStorage.setItem(`${prefix}settings`, JSON.stringify(newSettings));
+    }
   };
 
   const addEmployee = (employee: Omit<Employee, 'id' | 'created_at'>, userId: string, username: string) => {

@@ -14,7 +14,14 @@ export const addSuperAdminLog = (action: string, target: string, details: string
   };
 
   try {
-    const existingLogs = JSON.parse(localStorage.getItem('admin_logs') || '[]');
+    const existingLogs = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('admin_logs') || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن admin_logs:', error);
+        return [];
+      }
+    })();
     const updatedLogs = [...existingLogs, adminLog];
     localStorage.setItem('admin_logs', JSON.stringify(updatedLogs));
   } catch (error) {
@@ -35,7 +42,14 @@ export const addCustomerLog = (customerId: string, customerEmail: string, action
   };
 
   try {
-    const existingLogs = JSON.parse(localStorage.getItem('customer_logs') || '[]');
+    const existingLogs = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('customer_logs') || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن customer_logs:', error);
+        return [];
+      }
+    })();
     const updatedLogs = [...existingLogs, customerLog];
     localStorage.setItem('customer_logs', JSON.stringify(updatedLogs));
   } catch (error) {

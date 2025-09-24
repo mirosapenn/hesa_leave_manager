@@ -86,7 +86,7 @@ export const useAuth = () => {
     }
     
     setLoading(false);
-  }, [activationStatus.activationCode, getStoragePrefix]);
+  }, [activationStatus.activationCode]);
 
   const login = (username: string, password: string): boolean => {
     // Check super admin first
@@ -253,7 +253,13 @@ export const useAuth = () => {
   const getUsers = (): User[] => {
     const prefix = getStoragePrefix();
     if (currentUser?.role !== 'admin') return [];
-    return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+    
+    try {
+      return JSON.parse(localStorage.getItem(`${prefix}users`) || '[]');
+    } catch (error) {
+      console.error('خطا در خواندن users:', error);
+      return [];
+    }
   };
 
   return {

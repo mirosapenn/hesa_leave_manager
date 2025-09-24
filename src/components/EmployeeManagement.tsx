@@ -4,10 +4,12 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useAuth } from '../hooks/useAuth';
 import { Employee } from '../types';
 import { englishToPersianNumbers } from '../utils/dateHelpers';
+import { useToast } from '../hooks/useToast';
 
 const EmployeeManagement: React.FC = () => {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useLocalStorage();
   const { currentUser } = useAuth();
+  const { error: showError } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,7 +55,7 @@ const EmployeeManagement: React.FC = () => {
 
   const handleDelete = (employee: Employee) => {
     if (currentUser?.role !== 'admin') {
-      alert('فقط مدیر می‌تواند کارمند را حذف کند');
+      showError('فقط مدیر می‌تواند کارمند را حذف کند');
       return;
     }
     if (confirm(`آیا از حذف ${employee.name} ${employee.last_name} اطمینان دارید؟`)) {

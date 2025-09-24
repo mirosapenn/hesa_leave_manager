@@ -42,9 +42,7 @@ const ActivationPage: React.FC = () => {
       
       if (result.success) {
         setActivationCode('');
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        // State reset بدون reload
       }
       
       setLoading(false);
@@ -94,9 +92,7 @@ const ActivationPage: React.FC = () => {
       if (success) {
         setMessage('ورود موفق به پنل مدیریت کل');
         setMessageType('success');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // State reset بدون reload
       } else {
         setMessage('خطا در ورود');
         setMessageType('error');
@@ -134,7 +130,14 @@ const ActivationPage: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // لیست مشتریان موجود (در حالت واقعی از API دریافت می‌شود)
-        const existingCustomers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
+        const existingCustomers = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('admin_customers') || '[]');
+          } catch (error) {
+            console.error('خطا در خواندن admin_customers:', error);
+            return [];
+          }
+        })();
         const customer = existingCustomers.find((c: { email: string }) => c.email.toLowerCase() === email.toLowerCase());
         
         if (customer && customer.isActive) {
@@ -170,7 +173,14 @@ const ActivationPage: React.FC = () => {
       }
 
       // بررسی رمز عبور (در حالت واقعی از API بررسی می‌شود)
-      const existingCustomers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
+      const existingCustomers = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('admin_customers') || '[]');
+        } catch (error) {
+          console.error('خطا در خواندن admin_customers:', error);
+          return [];
+        }
+      })();
       const customer = existingCustomers.find((c: { email: string }) => c.email.toLowerCase() === userEmail.toLowerCase());
       
       if (customer && customer.password === userPassword) {
@@ -198,9 +208,7 @@ const ActivationPage: React.FC = () => {
         if (success) {
           setMessage('ورود موفق به سیستم');
           setMessageType('success');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          // State reset بدون reload
         } else {
           setMessage('خطا در ورود');
           setMessageType('error');

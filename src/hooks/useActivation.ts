@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseConfig } from '../lib/supabase';
 
 interface ActivationStatus {
   isActivated: boolean;
@@ -10,9 +10,13 @@ interface ActivationStatus {
 
 // کدهای فعال‌سازی از localStorage خوانده می‌شوند و توسط سوپر ادمین مدیریت می‌شوند
 const getValidActivationCodes = (): string[] => {
-  const savedCodes = localStorage.getItem('admin_activation_codes');
-  if (savedCodes) {
-    return JSON.parse(savedCodes);
+  try {
+    const savedCodes = localStorage.getItem('admin_activation_codes');
+    if (savedCodes) {
+      return JSON.parse(savedCodes);
+    }
+  } catch (error) {
+    console.error('خطا در خواندن کدهای فعال‌سازی:', error);
   }
   // در صورت نبود کدها، آرایه خالی برگردانده می‌شود
   return [];
@@ -100,6 +104,13 @@ export const useActivation = () => {
     const cleanCode = code.trim().toUpperCase();
     setLoading(true);
     
+    // اگر Supabase پیکربندی نشده باشد، مستقیماً از روش محلی استفاده کن
+    if (!supabaseConfig.isConfigured) {
+      console.warn('Supabase not configured, using local activation');
+      setLoading(false);
+      return activateLocally(cleanCode);
+    }
+    
     try {
       // تولید شناسه دستگاه
       const deviceFingerprint = generateDeviceFingerprint();
@@ -116,9 +127,8 @@ export const useActivation = () => {
 
       if (error) {
         console.error('Supabase function error:', error);
-        // نمایش خطای مناسب به کاربر
-        alert(`خطا در اتصال به سرور: ${error.message || 'لطفاً اتصال اینترنت خود را بررسی کنید'}`);
         // fallback به روش محلی
+        setLoading(false);
         return activateLocally(cleanCode);
       }
 
@@ -145,7 +155,7 @@ export const useActivation = () => {
         };
       } else {
         // نمایش پیام خطای مناسب
-        alert(data.message || 'کد فعال‌سازی نامعتبر است');
+        // خطا در فعال‌سازی
         setLoading(false);
         return {
           success: false,
@@ -155,7 +165,7 @@ export const useActivation = () => {
     } catch (error) {
       console.error('Activation error:', error);
       // نمایش خطای مناسب به کاربر
-      alert('خطا در فرآیند فعال‌سازی. لطفاً دوباره تلاش کنید');
+      // خطا در فرآیند فعال‌سازی
       // fallback به روش محلی
       setLoading(false);
       return activateLocally(cleanCode);
@@ -171,7 +181,14 @@ export const useActivation = () => {
     }
 
     // بررسی اینکه کد قبلاً استفاده شده یا نه (در نسخه واقعی از API بررسی می‌شود)
-    const usedCodes = JSON.parse(localStorage.getItem('used_activation_codes') || '[]');
+    const usedCodes = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('used_activation_codes') || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن کدهای استفاده شده:', error);
+        return [];
+      }
+    })();
     if (usedCodes.includes(cleanCode)) {
       return {
         success: false,

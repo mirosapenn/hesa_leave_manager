@@ -4,9 +4,10 @@ import { Lock, User, Shield, Loader2, LogIn } from 'lucide-react';
 interface LoginProps {
   onLogin: (username: string, password: string) => boolean;
   onBackToHome?: () => void;
+  onLoginSuccess?: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome, onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,6 +21,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, onBackToHome }) => {
     const success = onLogin(username, password);
     if (!success) {
       setError('نام کاربری یا رمز عبور اشتباه است');
+    } else {
+      // ورود موفق
+      onLoginSuccess?.();
     }
     
     setIsLoading(false);

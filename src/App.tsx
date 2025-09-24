@@ -18,13 +18,17 @@ import SystemLogs from './components/SystemLogs';
 import Backup from './components/Backup';
 import About from './components/About';
 import AdminPanel from './components/AdminPanel';
+import ToastContainer from './components/ToastContainer';
+import SubdomainError from './components/SubdomainError';
+import { useRouter } from './hooks/useRouter';
+import { useSubdomain } from './hooks/useSubdomain';
 
 function App() {
   const { currentUser, loading, login, logout } = useAuth();
   const { activationStatus, loading: activationLoading } = useActivation();
-// Removed unused destructured elements from useCustomerSync
+  const { currentRoute, navigate } = useRouter();
+  const { currentSubdomain, customer: subdomainCustomer, isLoading: subdomainLoading, getSubdomainStatus } = useSubdomain();
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [showCustomerLogin, setShowCustomerLogin] = useState(false);
   const [customerData, setCustomerData] = useState<Customer | null>(null);
 
 
@@ -35,7 +39,6 @@ function App() {
 
 
 
-  const [showCustomerDashboard, setShowCustomerDashboard] = useState(false);
   
   // ذخیره ایمیل مشتری فعلی برای همگام‌سازی
   useEffect(() => {
@@ -57,16 +60,148 @@ function App() {
   // بررسی دسترسی مدیر کل (Super Admin) - فقط با ایمیل
   const isSuperAdmin = currentUser?.email === 'ehsantaj@yahoo.com';
 
-  // اگر مدیر کل است، پنل مدیریت نمایش داده شود
-  if (isSuperAdmin && currentUser) {
+  // اگر در حال بارگذاری ساب‌دامین است
+  if (subdomainLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">در حال بررسی ساب‌دامین...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // اگر ساب‌دامین وجود دارد اما مشکل دارد
+  if (currentSubdomain) {
+    const subdomainStatus = getSubdomainStatus();
+    
+    if (subdomainStatus === 'not_found') {
+      return (
+        <SubdomainError 
+          subdomain={currentSubdomain} 
+          status="not_found"
+        />
+      );
+    }
+    
+    if (subdomainStatus === 'not_activated') {
+      return (
+        <SubdomainError 
+          subdomain={currentSubdomain} 
+          customer={subdomainCustomer ? {
+            name: subdomainCustomer.purchaseInfo?.customerName || subdomainCustomer.name,
+            email: subdomainCustomer.email
+          } : undefined}
+          status="not_activated"
+        />
+      );
+    }
+    
+    // ساب‌دامین فعال است - هدایت به سیستم محلی
+    if (subdomainStatus === 'active' && subdomainCustomer) {
+      // تنظیم customerData برای سیستم محلی
+      if (!customerData) {
+        setCustomerData(subdomainCustomer);
+      }
+      
+      // هدایت به سیستم محلی
+      if (currentRoute !== 'local-dashboard') {
+        navigate('local-dashboard');
+      }
+    }
+  }
+
+  const handleCustomerLogin = (email: string, password: string) => {
+    // بررسی سوپر ادمین
+    if (email.toLowerCase() === 'ehsantaj@yahoo.com' && password === 'superadmin2025') {
+      const success = login('superadmin', 'superadmin2025');
+      if (success) {
+        navigate('admin-panel');
+      }
+      return { success, message: success ? 'ورود موفق' : 'خطا در ورود' };
+    }
+    
+    // بررسی مشتریان
+    const customers = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('admin_customers') || '[]');
+      } catch (error) {
+        console.error('خطا در خواندن admin_customers:', error);
+        return [];
+      }
+    })();
+    
+    // ابتدا مشتری را با ایمیل پیدا کنیم
+    const customerByEmail = customers.find((c: Customer) => 
+      c.email.toLowerCase() === email.toLowerCase()
+    );
+    
+    // اگر مشتری پیدا شد، رمز عبور را بررسی کنیم
+    const customer = customerByEmail && 
+      (customerByEmail.password === password || 
+       customerByEmail.plainPassword === password || 
+       password === 'ONE_TIME_LOGIN') 
+      ? customerByEmail : null;
+    
+    if (!customer) {
+      return { success: false, message: 'ایمیل یا رمز عبور اشتباه است' };
+    }
+    
+    if (!customer.isActive) {
+      return { success: false, message: 'حساب کاربری شما غیرفعال شده است' };
+    }
+    
+    // ورود موفق
+    setCustomerData(customer);
+    navigate('customer-dashboard');
+    
+    addCustomerLog(customer.id, customer.email, 'login', 'ورود به پنل مشتری');
+    
+    return { success: true, message: 'ورود موفق' };
+  };
+
+  const handleForgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    // شبیه‌سازی ارسال رمز عبور جدید
+    return { success: true, message: 'رمز عبور جدید به ایمیل شما ارسال شد' };
+  };
+
+  // Routing logic
+  if (currentRoute === 'admin-panel' && isSuperAdmin && currentUser) {
     return <AdminPanel onLogout={logout} />;
   }
 
-  // اگر مشتری در پنل مشتری است
-  if (showCustomerDashboard && customerData) {
+  if (currentRoute === 'local-login') {
+    return (
+      <Login
+        onLogin={login}
+        onBackToHome={() => navigate('landing')}
+        onLoginSuccess={() => navigate('local-dashboard')}
+      />
+    );
+  }
+
+  if (currentRoute === 'customer-login') {
+    return (
+      <CustomerLogin
+        onLogin={handleCustomerLogin}
+        onBackToHome={() => navigate('landing')}
+        onForgotPassword={handleForgotPassword}
+      />
+    );
+  }
+
+  if (currentRoute === 'customer-dashboard' && customerData) {
     const handleCustomerActivate = async (code: string): Promise<{ success: boolean; message: string }> => {
       // بررسی اینکه کد مربوط به همین ایمیل باشد
-      const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
+      const customers = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('admin_customers') || '[]');
+        } catch (error) {
+          console.error('خطا در خواندن admin_customers:', error);
+          return [];
+        }
+      })();
       const customer = customers.find((c: Customer) => c.email === customerData.email);
       
       if (!customer) {
@@ -105,21 +240,22 @@ function App() {
         setCustomerData({ ...customer, isActivated: true, activatedAt: new Date().toISOString() });
         addCustomerLog(customer.id, customer.email, 'activation_success', 'نرم‌افزار با موفقیت فعال شد');
         
-        // بعد از فعال‌سازی موفق، هدایت به صفحه ورود نرم‌افزار
-        setTimeout(() => {
-          setShowCustomerDashboard(false);
-          setCustomerData(null);
-          setShowCustomerLogin(false);
-          // تنظیم وضعیت برای هدایت به صفحه ورود نرم‌افزار
-          window.location.reload();
-        }, 3000);
+        // بعد از فعال‌سازی موفق، کاربر در پنل مشتری باقی می‌ماند
+        // و می‌تواند با دکمه "ورود به حساب کاربری" وارد سیستم محلی شود
       }
       
       return result;
     };
 
     const handleCustomerPasswordChange = async (oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
-      const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
+      const customers = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('admin_customers') || '[]');
+        } catch (error) {
+          console.error('خطا در خواندن admin_customers:', error);
+          return [];
+        }
+      })();
       const customer = customers.find((c: Customer) => c.id === customerData.id);
       
       if (!customer || customer.password !== oldPassword) {
@@ -152,156 +288,70 @@ function App() {
     );
   }
 
-  // اگر صفحه ورود مشتری نمایش داده شود
-  if (showCustomerLogin) {
-    const handleCustomerLogin = (email: string, password: string) => {
-      // بررسی سوپر ادمین
-      if (email.toLowerCase() === 'ehsantaj@yahoo.com' && password === 'superadmin2025') {
-        const success = login('superadmin', 'superadmin2025');
-        return { success, message: success ? 'ورود موفق' : 'خطا در ورود' };
-      }
-      
-      // بررسی مشتریان
-      const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      
-      // ابتدا مشتری را با ایمیل پیدا کنیم
-      const customerByEmail = customers.find((c: Customer) => 
-        c.email.toLowerCase() === email.toLowerCase()
-      );
-      
-      // اگر مشتری پیدا شد، رمز عبور را بررسی کنیم
-      // بررسی هم با فیلد password و هم با فیلد plainPassword
-      const customer = customerByEmail && 
-        (customerByEmail.password === password || 
-         customerByEmail.plainPassword === password || 
-         password === 'ONE_TIME_LOGIN') 
-        ? customerByEmail : null;
-      
-      if (!customer) {
-        return { success: false, message: 'ایمیل یا رمز عبور اشتباه است' };
-      }
-      
-      if (!customer.isActive) {
-        return { success: false, message: 'حساب کاربری شما غیرفعال شده است' };
-      }
-      
-      // ورود موفق
-      setCustomerData(customer);
-      setShowCustomerLogin(false);
-      
-      addCustomerLog(customer.id, customer.email, 'login', 'ورود به پنل مشتری');
-      
-      // بررسی وضعیت فعال‌سازی
-      if (!customer.isActivated) {
-        // اگر فعال نشده یا منقضی شده، به پنل مشتری برود
-        setShowCustomerDashboard(true);
-      } else if (customer.expiresAt && new Date(customer.expiresAt) < new Date()) {
-        // اگر منقضی شده، به پنل مشتری برود
-        setShowCustomerDashboard(true);
-      } else {
-        // اگر فعال است، تنظیم activation status و خروج از صفحه لاگین
-        // تنظیم activation status برای نرم‌افزار
-        const activationData = {
-          isActivated: true,
-          activationCode: customer.activationCode,
-          activatedAt: customer.activatedAt,
-          expiresAt: customer.expiresAt
-        };
-        localStorage.setItem('activation_status', JSON.stringify(activationData));
-        
-        // خروج از صفحه لاگین و هدایت به نرم‌افزار
-        setShowCustomerLogin(false);
-      }
-      
-      return { success: true, customer, message: 'ورود موفق' };
-    };
-
-    const handleForgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
-      const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      const customer = customers.find((c: any) => c.email.toLowerCase() === email.toLowerCase());
-      
-      if (!customer) {
-        return { success: false, message: 'ایمیل یافت نشد' };
-      }
-      
-      if (!customer.isActive) {
-        return { success: false, message: 'حساب کاربری غیرفعال است' };
-      }
-      
-      // شبیه‌سازی ارسال کد
-      addCustomerLog(customer.id, customer.email, 'otp_requested', 'درخواست کد یکبار مصرف');
-      return { success: true, message: 'کد یکبار مصرف ارسال شد' };
-    };
-
-    return (
-      <CustomerLogin
-        onLogin={handleCustomerLogin}
-        onBackToHome={() => setShowCustomerLogin(false)}
-        onForgotPassword={handleForgotPassword}
-      />
-    );
-  }
 
   // اگر کاربر وارد نشده، ابتدا صفحه لندینگ نمایش داده شود
-  if (!currentUser) {
+  if (!currentUser && currentRoute === 'landing') {
     // صفحه لندینگ به عنوان صفحه اصلی
-    return <LandingPage onEnterSystem={() => setShowCustomerLogin(true)} />;
-  }
-
-  // اگر کاربر وارد شده اما فعال‌سازی نشده (این حالت نباید اتفاق بیفتد)
-  if (!activationStatus.isActivated) {
-    // اگر کاربر عادی است، به پنل مشتری هدایت شود
-    if (currentUser.email !== 'ehsantaj@yahoo.com') {
-      const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
-      const customer = customers.find((c: any) => c.email === currentUser.email);
-      if (customer) {
-        setCustomerData(customer);
-        setShowCustomerDashboard(true);
-        return null;
-      }
-    }
-    
-    // برای سایر موارد صفحه لاگین نمایش داده شود
     return (
-      <Login
-        onLogin={login}
-        onBackToHome={() => logout()}
-      />
+      <>
+        <LandingPage 
+          onEnterSystem={() => navigate('customer-login')}
+          onNavigateToCustomerLogin={() => navigate('customer-login')}
+        />
+        <ToastContainer />
+      </>
     );
   }
 
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'employees':
-        return <EmployeeManagement />;
-      case 'leaves':
-        return <LeaveManagement />;
-      case 'reports':
-        return <Reports />;
-      case 'backup':
-        return <Backup />;
-      case 'settings':
-        return <Settings />;
-      case 'logs':
-        return <SystemLogs />;
-      case 'about':
-        return <About />;
-      default:
-        return <Dashboard />;
-    }
-  };
+  // اگر کاربر وارد شده و فعال‌سازی شده، به سیستم محلی هدایت شود
+  if (currentUser && activationStatus.isActivated && currentRoute === 'local-dashboard') {
+    const renderCurrentPage = () => {
+      switch (currentPage) {
+        case 'dashboard':
+          return <Dashboard />;
+        case 'employees':
+          return <EmployeeManagement />;
+        case 'leaves':
+          return <LeaveManagement />;
+        case 'reports':
+          return <Reports />;
+        case 'backup':
+          return <Backup />;
+        case 'settings':
+          return <Settings />;
+        case 'logs':
+          return <SystemLogs />;
+        case 'about':
+          return <About />;
+        default:
+          return <Dashboard />;
+      }
+    };
 
+    return (
+      <>
+        <Layout
+          currentPage={currentPage}
+          onNavigate={setCurrentPage}
+          onLogout={logout}
+          currentUser={currentUser}
+        >
+          {renderCurrentPage()}
+        </Layout>
+        <ToastContainer />
+      </>
+    );
+  }
+
+  // صفحه اصلی (Landing Page)
   return (
-    <Layout
-      currentPage={currentPage}
-      onNavigate={setCurrentPage}
-      onLogout={logout}
-      currentUser={currentUser}
-    >
-      {renderCurrentPage()}
-    </Layout>
+    <>
+      <LandingPage
+        onEnterSystem={() => navigate('customer-login')}
+        onNavigateToCustomerLogin={() => navigate('customer-login')}
+      />
+      <ToastContainer />
+    </>
   );
 }
 

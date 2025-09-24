@@ -66,10 +66,21 @@ export interface Customer {
   organization?: string;
   phone?: string;
   notes?: string;
+  subdomain?: string;  // ساب‌دامین منحصر به فرد
+  subdomainUrl?: string;  // URL کامل ساب‌دامین
+  purchaseInfo?: {
+    customerName?: string;
+    organization?: string;
+    phone?: string;
+    notes?: string;
+  };
   createdAt: string;
   expiresAt?: string;
   isActive: boolean;
   isActivated: boolean;  // وضعیت فعال‌سازی
   activatedAt?: string;  // تاریخ فعال‌سازی
   isUsed: boolean;
+  usedBy?: string;
+  usedAt?: string;
+  lastActivity?: string;
 }

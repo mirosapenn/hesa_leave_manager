@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, Clock, User } from 'lucide-react';
+import { Plus, Calendar, User, Edit2, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Leave, LeaveType } from '../types';
+import { useAuth } from '../hooks/useAuth';
+import { Leave, LeaveType, LeaveCategory } from '../types';
 import PersianCalendar from './PersianCalendar';
 import TimePicker from './TimePicker';
 import { englishToPersianNumbers, formatPersianDate, formatDuration, formatLeaveBalance } from '../utils/dateHelpers';
+import { useToast } from '../hooks/useToast';
 
 const LeaveManagement: React.FC = () => {
   const { employees, leaves, addLeave, updateLeave, deleteLeave, settings } = useLocalStorage();
   const { currentUser } = useAuth();
+  const { error: showError } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingLeave, setEditingLeave] = useState<Leave | null>(null);
   const [formData, setFormData] = useState({
@@ -65,7 +68,7 @@ const LeaveManagement: React.FC = () => {
     const employee = employees.find(emp => emp.id === formData.employee_id);
     
     if (!employee) {
-      alert('لطفاً کارمند را انتخاب کنید');
+      showError('لطفاً کارمند را انتخاب کنید');
       return;
     }
 
@@ -73,14 +76,14 @@ const LeaveManagement: React.FC = () => {
       const balance = getEmployeeLeaveBalance(formData.employee_id);
       const requiredMinutes = duration * 8 * 60; // روز به دقیقه
       if (requiredMinutes > balance) {
-        alert(`مانده مرخصی کافی نیست.`);
+        showError(`مانده مرخصی کافی نیست.`);
         return;
       }
     } else {
       const balance = getEmployeeLeaveBalance(formData.employee_id);
       const requiredMinutes = duration * 60; // ساعت به دقیقه
       if (requiredMinutes > balance) {
-        alert(`مانده مرخصی کافی نیست.`);
+        showError(`مانده مرخصی کافی نیست.`);
         return;
       }
     }
@@ -134,7 +137,7 @@ const LeaveManagement: React.FC = () => {
 
   const handleDelete = (leave: Leave) => {
     if (currentUser?.role !== 'admin') {
-      alert('فقط مدیر می‌تواند مرخصی را حذف کند');
+      showError('فقط مدیر می‌تواند مرخصی را حذف کند');
       return;
     }
     const employee = employees.find(emp => emp.id === leave.employee_id);
@@ -508,10 +511,5 @@ const LeaveManagement: React.FC = () => {
     </div>
   );
 };
-
-// Add missing imports
-import { Edit2, Trash2 } from 'lucide-react';
-import { LeaveCategory } from '../types';
-import { useAuth } from '../hooks/useAuth';
 
 export default LeaveManagement;

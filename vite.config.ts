@@ -7,8 +7,23 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5000,
+    strictPort: false,
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 5000,
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
 });

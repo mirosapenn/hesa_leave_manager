@@ -8,6 +8,7 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Info,
+  Copy,
   Eye,
   EyeOff,
   Mail,
@@ -16,6 +17,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { englishToPersianNumbers, formatPersianDate } from '../utils/dateHelpers';
+import { useToast } from '../hooks/useToast';
 
 import { Customer } from '../types';
 
@@ -30,8 +32,9 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   customer, 
   onActivate, 
   onChangePassword, 
-  onLogout
+  onLogout 
 }) => {
+  const { success: showSuccess, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<'activation' | 'account' | 'settings'>('activation');
   const [activationCode, setActivationCode] = useState('');
   const [oldPassword, setOldPassword] = useState('');
@@ -71,7 +74,7 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
         setTimeout(() => {
           // خروج از پنل مشتری و ورود به سیستم اصلی
           onLogout();
-          window.location.reload();
+          // State reset بدون reload
         }, 2000);
       }
     } catch (error) {
@@ -212,16 +215,40 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </p>
             </div>
             {isActivated && !isExpired && (
-              <button
-                onClick={() => {
-                  // خروج از پنل مشتری و ورود به سیستم نرم‌افزار
-                  onLogout();
-                  window.location.reload();
-                }}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-              >
-                ورود به حساب کاربری
-              </button>
+              <div className="space-y-4">
+                {customer.subdomain && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">آدرس اختصاصی شما:</h4>
+                    <div className="flex items-center gap-2">
+                      <code className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded flex-1">
+                        {customer.subdomainUrl}
+                      </code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(customer.subdomainUrl || '');
+                          showSuccess('آدرس کپی شد');
+                        }}
+                        className="text-blue-600 hover:text-blue-800 p-1"
+                        title="کپی کردن آدرس"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-blue-700 mt-2">
+                      این آدرس را به کارمندان خود بدهید تا بتوانند وارد سیستم مرخصی شرکت شما شوند
+                    </p>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    // ورود به سیستم محلی با admin/1234
+                    window.open('/login', '_blank');
+                  }}
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium w-full"
+                >
+                  ورود به سیستم مرخصی
+                </button>
+              </div>
             )}
           </div>
         </div>

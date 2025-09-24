@@ -6,12 +6,14 @@ import { useActivation } from '../hooks/useActivation';
 import { useLogger } from '../hooks/useLogger';
 import { User as UserType } from '../types';
 import { englishToPersianNumbers, persianToEnglishNumbers, formatPersianDate } from '../utils/dateHelpers';
+import { useToast } from '../hooks/useToast';
 
 const Settings: React.FC = () => {
   const { settings, saveSettings } = useLocalStorage();
   const { changePassword, addUser, updateUser, deleteUser, getUsers, currentUser } = useAuth();
   const { getActivationInfo, deactivate } = useActivation();
   const { addLog } = useLogger();
+  const { error: showError, success: showSuccess } = useToast();
 
   const [annualLeaveLimit, setAnnualLeaveLimit] = useState(settings.annual_leave_limit.toString());
   const [newPassword, setNewPassword] = useState('');
@@ -40,7 +42,7 @@ const Settings: React.FC = () => {
     const limit = parseInt(persianToEnglishNumbers(annualLeaveLimit));
     
     if (isNaN(limit) || limit < 1) {
-      alert('سقف مرخصی سالانه باید عددی مثبت باشد');
+      showError('سقف مرخصی سالانه باید عددی مثبت باشد');
       return;
     }
 
@@ -644,7 +646,7 @@ const Settings: React.FC = () => {
                       onClick={() => {
                         if (confirm('آیا از غیرفعال کردن نرم‌افزار اطمینان دارید؟')) {
                           deactivate();
-                          window.location.reload();
+                          // State reset بدون reload
                         }
                       }}
                       className="text-red-600 hover:text-red-800 text-sm flex items-center gap-2"

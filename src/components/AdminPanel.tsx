@@ -5,48 +5,32 @@ import {
   Plus, 
   Download, 
   Search, 
-  // Filter,
-  // Calendar,
-  // BarChart3,
   Settings,
   LogOut,
   Shield,
-  // Mail,
+  Link,
   Copy,
   CheckCircle,
   AlertTriangle,
   Trash2,
-  // Edit2,
   Eye,
+  EyeOff,
   Clock,
   FileText,
   Activity,
-  // EyeOff,
   UserCheck,
   UserX,
   RefreshCw,
   Zap,
-  Info
+  Info,
+  Globe
 } from 'lucide-react';
 import { englishToPersianNumbers, formatPersianDate, formatPersianDateTime } from '../utils/dateHelpers';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import CloudflareManager from './CloudflareManager';
 
-interface Customer {
-  id: string;
-  activationCode: string;
-  licenseType: 'admin' | 'trial';
-  email?: string;
-  plainPassword?: string;
-  purchaseInfo?: Record<string, unknown>;
-  createdAt: string;
-  expiresAt?: string;
-  isActive: boolean;
-  isUsed: boolean;
-  usedBy?: string;
-  usedAt?: string;
-  lastActivity?: string;
-}
+import { Customer } from '../types';
 
 interface AdminLog {
   id: string;
@@ -76,7 +60,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [adminLogs, setAdminLogs] = useState<AdminLog[]>([]);
   const [customerLogs, setCustomerLogs] = useState<CustomerLog[]>([]);
-  const [currentView, setCurrentView] = useState<'customers' | 'admin-logs' | 'customer-logs'>('customers');
+  const [currentView, setCurrentView] = useState<'customers' | 'admin-logs' | 'customer-logs' | 'cloudflare'>('customers');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -85,11 +69,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedCustomerForSettings, setSelectedCustomerForSettings] = useState<Customer | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  // متغیرهای زیر برای قابلیت‌های آینده نگه داشته شده‌اند
-  // const [showPasswordModal, setShowPasswordModal] = useState(false);
-  // const [passwordCustomer, setPasswordCustomer] = useState<Customer | null>(null);
-  // const [newPassword, setNewPassword] = useState('');
-  // const [showPassword, setShowPassword] = useState(false);
+  // متغیرهای مدیریت رمز عبور
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordCustomer, setPasswordCustomer] = useState<Customer | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   
@@ -127,6 +111,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       }
     } catch (error) {
       console.error('Error loading customers:', error);
+      setCustomers([]);
     }
   };
 
@@ -143,6 +128,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       }
     } catch (error) {
       console.error('Error loading logs:', error);
+      setAdminLogs([]);
+      setCustomerLogs([]);
     }
   };
 
@@ -190,9 +177,60 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     return password;
   };
 
+  const generateSubdomain = (customerName: string): string => {
+    // تبدیل نام مشتری به ساب‌دامین مناسب
+    const cleanName = customerName
+      .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '') // حذف کاراکترهای خاص
+      .toLowerCase()
+      .substring(0, 20); // محدود کردن طول
+    
+    // اضافه کردن عدد تصادفی برای اطمینان از یکتایی
+    const randomNum = Math.floor(Math.random() * 1000);
+    return `${cleanName}${randomNum}`;
+  };
+
+  const checkSubdomainExists = (subdomain: string): boolean => {
+    return customers.some(c => c.subdomain === subdomain);
+  };
+
+  const updateCustomerSubdomain = (customerId: string, newSubdomain: string) => {
+    // بررسی تکراری نبودن ساب‌دامین
+    if (checkSubdomainExists(newSubdomain)) {
+      showMessage('این ساب‌دامین قبلاً استفاده شده است. لطفاً نام دیگری انتخاب کنید', 'error');
+      return;
+    }
+
+    const updatedCustomers = customers.map(c =>
+      c.id === customerId
+        ? {
+            ...c,
+                  subdomain: newSubdomain,
+                  subdomainUrl: `https://${newSubdomain}.finet.pro`
+          }
+        : c
+    );
+
+    saveCustomers(updatedCustomers);
+    addAdminLog('UPDATE', 'SUBDOMAIN', `ساب‌دامین مشتری ${customers.find(c => c.id === customerId)?.purchaseInfo?.customerName || 'نامشخص'} تغییر کرد: ${newSubdomain}`);
+    showMessage('ساب‌دامین با موفقیت تغییر کرد', 'success');
+  };
+
   const addCustomer = () => {
     if (!newCustomer.email || !newCustomer.customerName) {
       showMessage('لطفاً ایمیل و نام مشتری را وارد کنید', 'error');
+      return;
+    }
+
+    // تولید ساب‌دامین منحصر به فرد
+    let subdomain = generateSubdomain(newCustomer.customerName);
+    let attempts = 0;
+    while (checkSubdomainExists(subdomain) && attempts < 10) {
+      subdomain = generateSubdomain(newCustomer.customerName);
+      attempts++;
+    }
+
+    if (attempts >= 10) {
+      showMessage('خطا در تولید ساب‌دامین منحصر به فرد', 'error');
       return;
     }
 
@@ -211,6 +249,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       activationCode,
       licenseType: newCustomer.licenseType,
       email: newCustomer.email,
+      name: newCustomer.customerName,
+      isActivated: false,
+            subdomain,
+            subdomainUrl: `https://${subdomain}.finet.pro`,
+      password: initialPassword,
       plainPassword: initialPassword,
       purchaseInfo: {
         customerName: newCustomer.customerName,
@@ -340,6 +383,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     setMessage(text);
     setMessageType(type);
     setTimeout(() => setMessage(''), 3000);
+  };
+
+  const openPasswordModal = (customer: Customer) => {
+    setPasswordCustomer(customer);
+    setNewPassword(customer.plainPassword || customer.password || '');
+    setShowPasswordModal(true);
+  };
+
+  const updateCustomerPassword = () => {
+    if (!passwordCustomer || !newPassword.trim()) {
+      showMessage('لطفاً رمز عبور جدید را وارد کنید', 'error');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showMessage('رمز عبور باید حداقل 6 کاراکتر باشد', 'error');
+      return;
+    }
+
+    const updatedCustomers = customers.map(c => 
+      c.id === passwordCustomer.id 
+        ? { ...c, plainPassword: newPassword, password: newPassword }
+        : c
+    );
+    
+    saveCustomers(updatedCustomers);
+    addAdminLog('UPDATE', 'PASSWORD', `رمز عبور مشتری ${passwordCustomer.purchaseInfo?.customerName || 'نامشخص'} تغییر کرد`);
+    
+    setShowPasswordModal(false);
+    setPasswordCustomer(null);
+    setNewPassword('');
+    showMessage('رمز عبور با موفقیت تغییر کرد', 'success');
   };
 
   const deleteCustomer = (id: string) => {
@@ -515,6 +590,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
               >
                 <FileText className="w-4 h-4" />
                 لاگ مشتریان
+              </button>
+              <button
+                onClick={() => setCurrentView('cloudflare')}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  currentView === 'cloudflare' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+                Cloudflare DNS
               </button>
               <button
                 onClick={onLogout}
@@ -723,6 +809,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                           کد فعال‌سازی
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ساب‌دامین
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           نوع مجوز
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -766,6 +855,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                 <Copy className="w-4 h-4" />
                               </button>
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {customer.subdomain ? (
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                  {customer.subdomain}
+                                </code>
+                                <button
+                                  onClick={() => copyToClipboard(customer.subdomainUrl || '')}
+                                  className="text-green-600 hover:text-green-800"
+                                  title="کپی کردن URL"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">تولید نشده</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -813,6 +920,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                 title="تنظیمات"
                               >
                                 <Settings className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openPasswordModal(customer)}
+                                className="text-purple-600 hover:text-purple-900 p-1"
+                                title="مدیریت رمز عبور"
+                              >
+                                <Key className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const newSubdomain = prompt('ساب‌دامین جدید را وارد کنید:', customer.subdomain || '');
+                                  if (newSubdomain && newSubdomain !== customer.subdomain) {
+                                    updateCustomerSubdomain(customer.id, newSubdomain);
+                                  }
+                                }}
+                                className="text-indigo-600 hover:text-indigo-900 p-1"
+                                title="مدیریت ساب‌دامین"
+                              >
+                                <Link className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => toggleCustomerStatus(customer.id)}
@@ -1453,6 +1579,113 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Password Management Modal */}
+      {showPasswordModal && passwordCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">مدیریت رمز عبور</h3>
+              <p className="text-sm text-gray-600">
+                {passwordCustomer.purchaseInfo?.customerName || 'نامشخص'}
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Info className="w-5 h-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-blue-800 font-medium">توجه</p>
+                    <p className="text-xs text-blue-700">
+                      این رمز عبور برای ورود مشتری به سیستم محلی استفاده می‌شود. رمز عبور به صورت متن ساده ذخیره می‌شود.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  رمز عبور فعلی
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={passwordCustomer.plainPassword || passwordCustomer.password || ''}
+                    readOnly
+                    className="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-gray-600 hover:text-gray-800 p-2"
+                    title={showPassword ? 'مخفی کردن' : 'نمایش'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => copyToClipboard(passwordCustomer.plainPassword || passwordCustomer.password || '')}
+                    className="text-blue-600 hover:text-blue-800 p-2"
+                    title="کپی کردن"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  رمز عبور جدید
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="رمز عبور جدید را وارد کنید"
+                  />
+                  <button
+                    onClick={() => setNewPassword(generateRandomPassword())}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    تولید
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  رمز عبور باید حداقل 6 کاراکتر باشد
+                </p>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={updateCustomerPassword}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                بروزرسانی رمز عبور
+              </button>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordCustomer(null);
+                  setNewPassword('');
+                }}
+                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                انصراف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cloudflare DNS View */}
+      {currentView === 'cloudflare' && (
+        <div className="space-y-6">
+          <CloudflareManager />
         </div>
       )}
     </div>
