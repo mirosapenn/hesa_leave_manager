@@ -116,7 +116,7 @@ const ActivationPage: React.FC = () => {
 
   // بررسی اینکه آیا ایمیل سوپر ادمین است
   const isSuperAdminEmail = (email: string) => {
-    return email.toLowerCase() === 'ehsantaj@yahoo.com';
+    return email.toLowerCase() === 'superadmin';
   };
 
   // اگر کاربر وارد نشده، صفحه ورود نمایش داده شود

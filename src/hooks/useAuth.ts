@@ -45,7 +45,7 @@ export const useAuth = () => {
     const superAdmin: User = {
       id: 'superadmin',
       username: 'superadmin',
-      email: 'ehsantaj@yahoo.com',
+      email: 'superadmin',
       password: 'superadmin2025',
       role: 'admin',
       created_at: new Date().toISOString()
@@ -136,7 +136,7 @@ export const useAuth = () => {
     }
     
     // فقط نشست کاربر فعلی را حذف کن
-    if (currentUser?.email === 'ehsantaj@yahoo.com') {
+    if (currentUser?.email === 'superadmin') {
       // اگر سوپر ادمین است، فقط نشست سوپر ادمین را حذف کن
       localStorage.removeItem('superadmin_currentUserId');
     } else {

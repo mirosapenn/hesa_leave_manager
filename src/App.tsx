@@ -58,7 +58,7 @@ function App() {
   }
 
   // بررسی دسترسی مدیر کل (Super Admin) - فقط با ایمیل
-  const isSuperAdmin = currentUser?.email === 'ehsantaj@yahoo.com';
+  const isSuperAdmin = currentUser?.email === 'superadmin';
 
   // اگر در حال بارگذاری ساب‌دامین است
   if (subdomainLoading) {
@@ -114,7 +114,7 @@ function App() {
 
   const handleCustomerLogin = (email: string, password: string) => {
     // بررسی سوپر ادمین
-    if (email.toLowerCase() === 'ehsantaj@yahoo.com' && password === 'superadmin2025') {
+    if (email.toLowerCase() === 'superadmin' && password === 'superadmin2025') {
       const success = login('superadmin', 'superadmin2025');
       if (success) {
         navigate('admin-panel');
