@@ -28,7 +28,7 @@ ${status === 'not_found'
 با تشکر
     `);
     
-    window.open(`mailto:ehsantaj@yahoo.com?subject=${subject}&body=${body}`);
+    window.open(`mailto:admin@hessaway.com?subject=${subject}&body=${body}`);
   };
 
   const handleRefresh = () => {
@@ -88,7 +88,7 @@ ${status === 'not_found'
             برای فعال‌سازی یا تمدید لایسنس خود، با پشتیبانی تماس بگیرید:
           </p>
           <p className="text-sm text-blue-600 font-medium mt-1">
-            ehsantaj@yahoo.com
+            admin@hessaway.com
           </p>
         </div>
       </div>

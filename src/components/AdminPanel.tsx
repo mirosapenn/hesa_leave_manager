@@ -79,6 +79,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
   
   const [newCustomer, setNewCustomer] = useState({
     licenseType: 'admin' as 'admin' | 'trial',
+    planType: 'basic' as 'basic' | 'professional' | 'enterprise',
     email: '',
     customerName: '',
     organization: '',
@@ -248,6 +249,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       id: Date.now().toString(),
       activationCode,
       licenseType: newCustomer.licenseType,
+      planType: newCustomer.planType || 'basic',
       email: newCustomer.email,
       name: newCustomer.customerName,
       isActivated: false,
@@ -274,6 +276,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
     
     setNewCustomer({
       licenseType: 'admin',
+      planType: 'basic',
       email: '',
       customerName: '',
       organization: '',
@@ -448,7 +451,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
       const ws = workbook.addWorksheet('مشتریان');
       ws.views = [{ rightToLeft: true }];
       
-      const headers = ['نام مشتری', 'ایمیل', 'کد فعال‌سازی', 'نوع مجوز', 'وضعیت', 'تاریخ ایجاد', 'تاریخ انقضا', 'استفاده شده'];
+      const headers = ['نام مشتری', 'ایمیل', 'کد فعال‌سازی', 'نوع مجوز', 'نوع پلان', 'وضعیت', 'تاریخ ایجاد', 'تاریخ انقضا', 'استفاده شده'];
       const headerRow = ws.addRow(headers);
       
       headerRow.eachCell((cell) => {
@@ -463,6 +466,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
           customer.email || '-',
           customer.activationCode,
           customer.licenseType === 'admin' ? 'مدیریت' : 'آزمایشی',
+          customer.planType === 'basic' ? 'پایه' : 
+          customer.planType === 'professional' ? 'حرفه‌ای' : 
+          customer.planType === 'enterprise' ? 'سازمانی' : 'نامشخص',
           customer.isActive ? 'فعال' : 'غیرفعال',
           formatPersianDate(new Date(customer.createdAt)),
           customer.expiresAt ? formatPersianDate(new Date(customer.expiresAt)) : 'نامحدود',
@@ -815,6 +821,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                           نوع مجوز
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          نوع پلان
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           وضعیت
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -881,6 +890,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                                 : 'bg-orange-100 text-orange-800'
                             }`}>
                               {customer.licenseType === 'admin' ? 'مدیریت' : 'آزمایشی'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              customer.planType === 'basic' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : customer.planType === 'professional'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-indigo-100 text-indigo-800'
+                            }`}>
+                              {customer.planType === 'basic' ? 'پایه' : 
+                               customer.planType === 'professional' ? 'حرفه‌ای' : 
+                               customer.planType === 'enterprise' ? 'سازمانی' : 'نامشخص'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1147,6 +1169,44 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLogout }) => {
                       className="form-radio text-blue-600"
                     />
                     <span className="mr-2">آزمایشی (۳۰ روز)</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  نوع پلان
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="basic"
+                      checked={newCustomer.planType === 'basic'}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, planType: e.target.value as 'basic' | 'professional' | 'enterprise' })}
+                      className="form-radio text-blue-600"
+                    />
+                    <span className="mr-2">پایه</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="professional"
+                      checked={newCustomer.planType === 'professional'}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, planType: e.target.value as 'basic' | 'professional' | 'enterprise' })}
+                      className="form-radio text-blue-600"
+                    />
+                    <span className="mr-2">حرفه‌ای</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="enterprise"
+                      checked={newCustomer.planType === 'enterprise'}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, planType: e.target.value as 'basic' | 'professional' | 'enterprise' })}
+                      className="form-radio text-blue-600"
+                    />
+                    <span className="mr-2">سازمانی</span>
                   </label>
                 </div>
               </div>

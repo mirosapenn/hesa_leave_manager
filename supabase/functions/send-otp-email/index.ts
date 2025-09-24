@@ -97,7 +97,7 @@ serve(async (req) => {
           <div style="margin-bottom: 10px;">
             <strong style="color: #2d3748;">سیستم مدیریت مرخصی حسا</strong>
           </div>
-          <div style="margin-bottom: 5px;">📧 ehsantaj@yahoo.com</div>
+          <div style="margin-bottom: 5px;">📧 admin@hessaway.com</div>
           <div style="margin-bottom: 15px;">🌐 leave.finet.pro</div>
           <p style="margin: 0; font-size: 11px; color: #a0aec0;">
             این ایمیل به صورت خودکار ارسال شده است. لطفاً به آن پاسخ ندهید.

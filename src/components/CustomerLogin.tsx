@@ -91,7 +91,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
 
   const handleSendOneTimeCode = async () => {
     if (!email) {
-      setError('لطفاً ابتدا ایمیل خود را وارد کنید');
+      setError('لطفاً ایمیل خود را وارد کنید');
       return;
     }
 
@@ -142,7 +142,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
               ورود به حساب کاربری
             </h2>
             <p className="text-gray-600 mt-2">
-              برای دسترسی به سیستم مدیریت مرخصی وارد شوید
+              برای دسترسی به حساب کاربری در سایت وارد شوید.
             </p>
             {onBackToHome && (
               <button
@@ -183,7 +183,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ایمیل یا نام کاربری
+                   ایمیل
                 </label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -192,7 +192,8 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="ایمیل یا نام کاربری خود را وارد کنید"
+                    placeholder="ایمیل خود را وارد کنید"
+                    style={{ direction: 'ltr', textAlign: 'center' }}
                     required
                   />
                 </div>
@@ -210,7 +211,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
                     onChange={(e) => setPassword(e.target.value)}
                     className="block w-full pr-10 pl-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     placeholder="رمز عبور خود را وارد کنید"
-                    style={{ direction: 'ltr', textAlign: 'left' }}
+                    style={{ direction: 'ltr', textAlign: 'center' }}
                     required
                   />
                   <button
@@ -246,7 +247,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ایمیل یا نام کاربری
+                   کاربری
                 </label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -255,7 +256,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="ایمیل یا نام کاربری خود را وارد کنید"
+                    placeholder="ایمیل خود را وارد کنید"
                     required
                   />
                 </div>
@@ -371,10 +372,10 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
           {/* Contact Info */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              مشکل در ورود دارید؟
+              اگر مشکل در ورود دارید با پشتیبانی تماس بگیرید.
             </p>
             <p className="text-sm text-blue-600 mt-1">
-              ehsantaj@yahoo.com
+              admin@hessaway.com
             </p>
           </div>
         </div>

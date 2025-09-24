@@ -682,7 +682,7 @@ const ActivationPage: React.FC = () => {
               برای خرید یا پشتیبانی با ما تماس بگیرید
             </p>
             <p className="text-sm text-blue-600 mt-1">
-              ehsantaj@yahoo.com
+              admin@hessaway.com
             </p>
           </div>
         </div>

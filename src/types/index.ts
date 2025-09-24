@@ -61,6 +61,7 @@ export interface Customer {
   password: string;  // پسورد به صورت plain text برای super admin
   plainPassword?: string;  // سازگاری با کد قدیمی
   licenseType: 'admin' | 'trial';
+  planType: 'basic' | 'professional' | 'enterprise';  // نوع پلان
   email: string;
   name: string;  // نام مشتری
   organization?: string;
@@ -68,6 +69,7 @@ export interface Customer {
   notes?: string;
   subdomain?: string;  // ساب‌دامین منحصر به فرد
   subdomainUrl?: string;  // URL کامل ساب‌دامین
+  subdomainChangedAt?: string;  // آخرین تغییر ساب‌دامین
   purchaseInfo?: {
     customerName?: string;
     organization?: string;

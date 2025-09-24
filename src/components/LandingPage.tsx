@@ -370,7 +370,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterSystem, onNavigateToCu
               <div className="space-y-2 text-gray-400">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  <span>ehsantaj@yahoo.com</span>
+                  <span>admin@hessaway.com</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />

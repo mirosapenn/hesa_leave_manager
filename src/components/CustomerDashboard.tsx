@@ -46,11 +46,77 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [loading, setLoading] = useState(false);
+  const [newSubdomain, setNewSubdomain] = useState('');
+  const [subdomainLoading, setSubdomainLoading] = useState(false);
 
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage(text);
     setMessageType(type);
     setTimeout(() => setMessage(''), 5000);
+  };
+
+  // بررسی محدودیت تغییر ساب‌دامین (هر 5 دقیقه)
+  const canChangeSubdomain = () => {
+    if (!customer.subdomainChangedAt) return true;
+    const lastChange = new Date(customer.subdomainChangedAt);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - lastChange.getTime()) / (1000 * 60);
+    return diffMinutes >= 5;
+  };
+
+  // تغییر ساب‌دامین
+  const handleSubdomainChange = async () => {
+    if (!newSubdomain.trim()) {
+      showError('لطفاً ساب‌دامین جدید را وارد کنید');
+      return;
+    }
+
+    if (!canChangeSubdomain()) {
+      showError('شما فقط هر 5 دقیقه یکبار می‌توانید ساب‌دامین خود را تغییر دهید');
+      return;
+    }
+
+    setSubdomainLoading(true);
+    try {
+      // بررسی یکتایی ساب‌دامین
+      const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
+      const existingCustomer = customers.find((c: Customer) => 
+        c.subdomain === newSubdomain.toLowerCase() && c.id !== customer.id
+      );
+
+      if (existingCustomer) {
+        showError('این ساب‌دامین قبلاً استفاده شده است');
+        setSubdomainLoading(false);
+        return;
+      }
+
+      // به‌روزرسانی ساب‌دامین
+      const updatedCustomers = customers.map((c: Customer) => {
+        if (c.id === customer.id) {
+          return {
+            ...c,
+            subdomain: newSubdomain.toLowerCase(),
+            subdomainUrl: `https://${newSubdomain.toLowerCase()}.finet.pro`,
+            subdomainChangedAt: new Date().toISOString()
+          };
+        }
+        return c;
+      });
+
+      localStorage.setItem('admin_customers', JSON.stringify(updatedCustomers));
+      
+      // به‌روزرسانی customer object
+      customer.subdomain = newSubdomain.toLowerCase();
+      customer.subdomainUrl = `https://${newSubdomain.toLowerCase()}.finet.pro`;
+      customer.subdomainChangedAt = new Date().toISOString();
+
+      showSuccess('ساب‌دامین با موفقیت تغییر کرد');
+      setNewSubdomain('');
+    } catch (error) {
+      showError('خطا در تغییر ساب‌دامین');
+    } finally {
+      setSubdomainLoading(false);
+    }
   };
 
   const handleActivation = async (e: React.FormEvent) => {
@@ -69,13 +135,31 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       
       if (result.success) {
         setActivationCode('');
-        // بعد از فعال‌سازی موفق، به صفحه ورود نرم‌افزار هدایت شود
-        showMessage('نرم‌افزار با موفقیت فعال شد. در حال هدایت به صفحه ورود...', 'success');
-        setTimeout(() => {
-          // خروج از پنل مشتری و ورود به سیستم اصلی
-          onLogout();
-          // State reset بدون reload
-        }, 2000);
+        
+        // ایجاد ساب‌دامین خودکار
+        if (!customer.subdomain) {
+          const autoSubdomain = `customer-${customer.id.slice(-6)}`;
+          const customers = JSON.parse(localStorage.getItem('admin_customers') || '[]');
+          const updatedCustomers = customers.map((c: Customer) => {
+            if (c.id === customer.id) {
+              return {
+                ...c,
+                subdomain: autoSubdomain,
+                subdomainUrl: `https://${autoSubdomain}.finet.pro`,
+                subdomainChangedAt: new Date().toISOString()
+              };
+            }
+            return c;
+          });
+          localStorage.setItem('admin_customers', JSON.stringify(updatedCustomers));
+          
+          // به‌روزرسانی customer object
+          customer.subdomain = autoSubdomain;
+          customer.subdomainUrl = `https://${autoSubdomain}.finet.pro`;
+          customer.subdomainChangedAt = new Date().toISOString();
+        }
+        
+        showMessage('نرم‌افزار با موفقیت فعال شد و ساب‌دامین شما ایجاد شد!', 'success');
       }
     } catch (error) {
       showMessage('خطا در فعال‌سازی', 'error');
@@ -248,6 +332,27 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 >
                   ورود به سیستم مرخصی
                 </button>
+                
+                {customer.subdomainUrl && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-800 font-medium">آدرس ساب‌دامین شما:</p>
+                        <p className="text-sm text-blue-600 font-mono">{customer.subdomainUrl}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(customer.subdomainUrl!);
+                          showSuccess('آدرس کپی شد');
+                        }}
+                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                        title="کپی آدرس"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -314,6 +419,15 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                           </div>
                           
                           <div className="flex justify-between">
+                            <span>نوع پلان:</span>
+                            <span className="font-medium">
+                              {customer.planType === 'basic' ? 'پایه' : 
+                               customer.planType === 'professional' ? 'حرفه‌ای' : 
+                               customer.planType === 'enterprise' ? 'سازمانی' : 'نامشخص'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between">
                             <span>کد فعال‌سازی:</span>
                             <span className="font-mono text-xs">{customer.activationCode}</span>
                           </div>
@@ -347,11 +461,11 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                           </p>
                           <div className="mt-3">
                             <a
-                              href="mailto:ehsantaj@yahoo.com"
+                              href="mailto:admin@hessaway.com"
                               className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
                             >
                               <Mail className="w-4 h-4" />
-                              ehsantaj@yahoo.com
+                              admin@hessaway.com
                             </a>
                           </div>
                         </div>
@@ -471,6 +585,65 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
             {activeTab === 'settings' && (
               <div className="space-y-6">
+                {/* تغییر ساب‌دامین */}
+                {customer.subdomain && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">تغییر آدرس ساب‌دامین</h3>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-blue-800 font-medium">ساب‌دامین فعلی:</p>
+                          <p className="text-sm text-blue-600 font-mono">{customer.subdomainUrl}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(customer.subdomainUrl!);
+                            showSuccess('آدرس کپی شد');
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                          title="کپی آدرس"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4 max-w-md">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ساب‌دامین جدید
+                        </label>
+                        <input
+                          type="text"
+                          value={newSubdomain}
+                          onChange={(e) => setNewSubdomain(e.target.value.toLowerCase())}
+                          className="block w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="مثال: mycompany"
+                          style={{ direction: 'ltr', textAlign: 'left' }}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          فقط حروف انگلیسی، اعداد و خط تیره مجاز است
+                        </p>
+                      </div>
+                      
+                      <button
+                        onClick={handleSubdomainChange}
+                        disabled={!newSubdomain.trim() || subdomainLoading || !canChangeSubdomain()}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        {subdomainLoading ? 'در حال تغییر...' : 'تغییر ساب‌دامین'}
+                      </button>
+                      
+                      {!canChangeSubdomain() && (
+                        <p className="text-sm text-orange-600">
+                          ⏰ شما فقط هر 5 دقیقه یکبار می‌توانید ساب‌دامین خود را تغییر دهید
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">تغییر رمز عبور سیستم محلی</h3>
                   
@@ -605,11 +778,11 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 برای پشتیبانی، تمدید مجوز یا سوالات فنی:
               </p>
               <a
-                href="mailto:ehsantaj@yahoo.com"
+                href="mailto:admin@hessaway.com"
                 className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800"
               >
                 <Mail className="w-4 h-4" />
-                ehsantaj@yahoo.com
+                admin@hessaway.com
               </a>
             </div>
           </div>

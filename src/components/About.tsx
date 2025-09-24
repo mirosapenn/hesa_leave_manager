@@ -177,7 +177,7 @@ const About: React.FC = () => {
               </div>
               <h4 className="text-xl font-bold text-gray-900 mb-2">Ehsan Taj</h4>
               <p className="text-gray-600 mb-2">توسعه‌دهنده نرم‌افزار</p>
-              <p className="text-blue-600 text-sm">ehsantaj@yahoo.com</p>
+              <p className="text-blue-600 text-sm">admin@hessaway.com</p>
             </div>
             
             <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
