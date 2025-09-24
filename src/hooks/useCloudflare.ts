@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createDNSRecordProxy, checkDNSRecordProxy, setupCompleteDNSProxy } from '../utils/cloudflareProxy';
 
 interface CloudflareConfig {
   apiKey: string;
@@ -28,33 +29,11 @@ export const useCloudflare = () => {
     setError(null);
 
     try {
-      const zoneId = await getZoneId();
-      if (!zoneId) {
-        throw new Error('Zone ID not found');
+      const result = await createDNSRecordProxy(name, type, content, proxied);
+      if (!result) {
+        throw new Error('خطا در ایجاد DNS Record');
       }
-
-      const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type,
-          name,
-          content,
-          ttl: 1, // Auto TTL
-          proxied
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        return true;
-      } else {
-        throw new Error(data.errors?.[0]?.message || 'خطا در ایجاد DNS Record');
-      }
+      return result;
     } catch (error) {
       console.error('Error creating DNS record:', error);
       setError(error instanceof Error ? error.message : 'خطا در ایجاد DNS Record');
@@ -83,18 +62,7 @@ export const useCloudflare = () => {
   // بررسی وجود DNS Record
   const checkDNSRecord = async (name: string): Promise<boolean> => {
     try {
-      const zoneId = await getZoneId();
-      if (!zoneId) return false;
-
-      const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records?name=${name}`, {
-        headers: {
-          'Authorization': `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      return data.success && data.result.length > 0;
+      return await checkDNSRecordProxy(name);
     } catch (error) {
       console.error('Error checking DNS record:', error);
       return false;
@@ -107,31 +75,12 @@ export const useCloudflare = () => {
     setError(null);
 
     try {
-      const serverIP = '51.75.62.168';
-      let allSuccess = true;
-
-      // 1. ایجاد A Record برای دامین اصلی
-      const aRecordExists = await checkDNSRecord('finet.pro');
-      if (!aRecordExists) {
-        const aRecordSuccess = await createARecord('finet.pro', serverIP);
-        if (!aRecordSuccess) allSuccess = false;
+      const result = await setupCompleteDNSProxy();
+      if (!result.success) {
+        setError(result.message);
+        return false;
       }
-
-      // 2. ایجاد A Record برای www
-      const wwwRecordExists = await checkDNSRecord('www.finet.pro');
-      if (!wwwRecordExists) {
-        const wwwRecordSuccess = await createARecord('www.finet.pro', serverIP);
-        if (!wwwRecordSuccess) allSuccess = false;
-      }
-
-      // 3. ایجاد Wildcard CNAME
-      const wildcardExists = await checkDNSRecord('*.finet.pro');
-      if (!wildcardExists) {
-        const wildcardSuccess = await createWildcardCNAME();
-        if (!wildcardSuccess) allSuccess = false;
-      }
-
-      return allSuccess;
+      return true;
     } catch (error) {
       console.error('Error setting up DNS:', error);
       setError(error instanceof Error ? error.message : 'خطا در تنظیم DNS');
