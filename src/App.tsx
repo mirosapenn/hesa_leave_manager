@@ -161,7 +161,7 @@ function App() {
     return { success: true, message: 'ورود موفق' };
   };
 
-  const handleForgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const handleForgotPassword = async (_email: string): Promise<{ success: boolean; message: string }> => {
     // شبیه‌سازی ارسال رمز عبور جدید
     return { success: true, message: 'رمز عبور جدید به ایمیل شما ارسال شد' };
   };
@@ -281,7 +281,6 @@ function App() {
         onActivate={handleCustomerActivate}
         onChangePassword={handleCustomerPasswordChange}
         onLogout={() => {
-          setShowCustomerDashboard(false);
           setCustomerData(null);
         }}
       />
