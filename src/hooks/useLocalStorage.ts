@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Employee, Leave, Settings } from '../types';
 import { useLogger } from './useLogger';
 import { useActivation } from './useActivation';
@@ -20,7 +20,7 @@ export const useLocalStorage = () => {
   const { addLog } = useLogger();
 
   // تولید پیشوند منحصر به فرد برای هر کد فعال‌سازی یا ساب‌دامین
-  const getStoragePrefix = () => {
+  const getStoragePrefix = useCallback(() => {
     if (isSubdomainMode) {
       // در حالت ساب‌دامین، از useSubdomainStorage استفاده می‌کنیم
       return '';
@@ -29,7 +29,7 @@ export const useLocalStorage = () => {
       return `tenant_${activationStatus.activationCode}_`;
     }
     return 'default_';
-  };
+  }, [isSubdomainMode, activationStatus.activationCode]);
   useEffect(() => {
     if (isSubdomainMode) {
       // در حالت ساب‌دامین، از useSubdomainStorage استفاده می‌کنیم
@@ -58,7 +58,7 @@ export const useLocalStorage = () => {
         setSettings(JSON.parse(savedSettings));
       }
     }
-  }, [activationStatus.activationCode, isSubdomainMode, getJSON]);
+  }, [activationStatus.activationCode, isSubdomainMode]);
 
   const saveEmployees = (newEmployees: Employee[]) => {
     setEmployees(newEmployees);

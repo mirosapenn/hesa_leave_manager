@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSubdomain } from './useSubdomain';
 
 export const useSubdomainStorage = () => {
@@ -13,22 +13,22 @@ export const useSubdomainStorage = () => {
     }
   }, [currentSubdomain]);
 
-  const getItem = (key: string): string | null => {
+  const getItem = useCallback((key: string): string | null => {
     const fullKey = storagePrefix + key;
     return localStorage.getItem(fullKey);
-  };
+  }, [storagePrefix]);
 
-  const setItem = (key: string, value: string): void => {
+  const setItem = useCallback((key: string, value: string): void => {
     const fullKey = storagePrefix + key;
     localStorage.setItem(fullKey, value);
-  };
+  }, [storagePrefix]);
 
-  const removeItem = (key: string): void => {
+  const removeItem = useCallback((key: string): void => {
     const fullKey = storagePrefix + key;
     localStorage.removeItem(fullKey);
-  };
+  }, [storagePrefix]);
 
-  const getJSON = <T>(key: string, defaultValue: T): T => {
+  const getJSON = useCallback(<T>(key: string, defaultValue: T): T => {
     try {
       const item = getItem(key);
       return item ? JSON.parse(item) : defaultValue;
@@ -36,11 +36,11 @@ export const useSubdomainStorage = () => {
       console.error(`Error parsing JSON for key ${key}:`, error);
       return defaultValue;
     }
-  };
+  }, [storagePrefix]);
 
-  const setJSON = <T>(key: string, value: T): void => {
+  const setJSON = useCallback(<T>(key: string, value: T): void => {
     setItem(key, JSON.stringify(value));
-  };
+  }, [storagePrefix]);
 
   return {
     getItem,
