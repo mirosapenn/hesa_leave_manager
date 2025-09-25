@@ -182,12 +182,14 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
             /* Regular Login Form */
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="customer-email" className="block text-sm font-medium text-gray-700 mb-2">
                    ایمیل
                 </label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
+                    id="customer-email"
+                    name="customer-email"
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -200,12 +202,14 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="customer-password" className="block text-sm font-medium text-gray-700 mb-2">
                   رمز عبور
                 </label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
+                    id="customer-password"
+                    name="customer-password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -246,12 +250,14 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
             /* One-Time Code Login Form */
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="one-time-email" className="block text-sm font-medium text-gray-700 mb-2">
                    کاربری
                 </label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
+                    id="one-time-email"
+                    name="one-time-email"
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -283,12 +289,14 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onLogin, onBackToHome, on
               ) : (
                 <form onSubmit={handleOneTimeLogin} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="one-time-code" className="block text-sm font-medium text-gray-700 mb-2">
                       کد یکبار مصرف
                     </label>
                     <div className="relative">
                       <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                       <input
+                        id="one-time-code"
+                        name="one-time-code"
                         type="text"
                         value={oneTimeCode}
                         onChange={(e) => setOneTimeCode(e.target.value)}
